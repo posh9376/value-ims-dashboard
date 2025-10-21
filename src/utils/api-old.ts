@@ -5,15 +5,10 @@ import type { AxiosInstance, AxiosResponse } from 'axios';
 export interface User {
   id: number;
   username: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
   role: 'admin' | 'manager' | 'cashier';
-  id_card_number?: string;
+  id_card_number: string;
   is_active: boolean;
-  is_staff?: boolean;
-  date_joined: string;
-  last_login?: string;
+  is_staff: boolean;
 }
 
 export interface AuthResponse {
@@ -26,12 +21,7 @@ export interface AuthResponse {
 export interface School {
   id: number;
   name: string;
-  location?: string;
-  contact_person?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  created_at: string;
+  location: string;
 }
 
 export interface UniformType {
@@ -42,20 +32,15 @@ export interface UniformType {
 export interface Size {
   id: number;
   label: string;
-  category?: string;
-  description?: string;
-  created_at: string;
 }
 
 export interface Inventory {
   id: number;
   school: number;
-  school_details?: School;
+  school_details: School;
   variant: string;
-  uniformType: number;
-  uniformType_details?: UniformType;
   size: number;
-  size_details?: Size;
+  size_details: Size;
   b_price: string;
   s_price: string;
   quantity: number;
@@ -66,46 +51,27 @@ export interface Inventory {
 
 export interface Sale {
   id: number;
-  inventory: number;
-  school?: number;
+  date: string;
+  customer_name?: string;
+  total_amount: string;
+  sold_by: number;
+}
+
+export interface SaleItem {
+  id: number;
+  sale: number;
+  stock: number;
   quantity: number;
   unit_price: string;
-  total_price: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  date: string;
-  created_at: string;
-  customer_name?: string;
-  customer_email?: string;
-  customer_phone?: string;
-  notes?: string;
-  sold_by: number;
-  // Detailed information from backend
-  inventory_details?: {
-    variant: string;
-    size_details?: {
-      label: string;
-    };
-  };
-  school_details?: {
-    name: string;
-  };
+  line_total: string;
 }
-
-interface Return {
-  id: number;
-  sale: number; // Sale ID
-  reason: string;
-  returned_on: string;
-  received_by: number | null;
-}
-
 
 export interface DashboardData {
   today_sales: number;
   today_orders: number;
   month_sales: number;
   month_orders: number;
-  month_growth?: number;
+  month_growth: number;
   low_stock_items: number;
   out_of_stock_items: number;
   total_schools: number;
@@ -157,26 +123,13 @@ class ApiService {
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('access_token');
-
-        // Skip adding token for login, register, and refresh endpoints
-        const noAuthEndpoints = [
-          '/auth/login/',
-          '/auth/register/',
-          '/auth/token/refresh/',
-        ];
-
-        if (
-          token &&
-          !noAuthEndpoints.some((url) => config.url?.includes(url))
-        ) {
+        if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-
         return config;
       },
       (error) => Promise.reject(error)
     );
-
 
     // Response interceptor to handle token refresh
     this.api.interceptors.response.use(
@@ -237,7 +190,6 @@ class ApiService {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    window.location.href = '/auth/login';
   }
 
   async getUserProfile(): Promise<User> {
@@ -280,63 +232,54 @@ class ApiService {
   }
 
   // School Methods
-  async getSchools(params?: any): Promise<PaginatedResponse<School> | School[]> {
-    const response: AxiosResponse<School[]> = await this.api.get('/stock/schools/', { params });
+  async getSchools(): Promise<School[]> {
+    const response: AxiosResponse<School[]> = await this.api.get('/stock/schools');
     return response.data;
   }
 
-  async createSchool(school: Omit<School, 'id' | 'created_at'>): Promise<School> {
-    const response: AxiosResponse<School> = await this.api.post('/stock/schools/', school);
+  async createSchool(school: Omit<School, 'id'>): Promise<School> {
+    const response: AxiosResponse<School> = await this.api.post('/stock/schools', school);
     return response.data;
   }
 
   async updateSchool(id: number, school: Partial<School>): Promise<School> {
-    const response: AxiosResponse<School> = await this.api.put(`/stock/schools/${id}/`, school);
+    const response: AxiosResponse<School> = await this.api.put(`/stock/schools/${id}`, school);
     return response.data;
   }
 
   async deleteSchool(id: number): Promise<void> {
-    await this.api.delete(`/stock/schools/${id}/`);
+    await this.api.delete(`/stock/schools/${id}`);
   }
 
   // Uniform Types Methods
-  async getUniformTypes(params?: any): Promise<PaginatedResponse<UniformType> | UniformType[]> {
-    const response: AxiosResponse<UniformType[]> = await this.api.get('/stock/categories/', { params });
+  async getUniformTypes(): Promise<UniformType[]> {
+    const response: AxiosResponse<UniformType[]> = await this.api.get('/stock/categories');
     return response.data;
   }
 
   async createUniformType(type: Omit<UniformType, 'id'>): Promise<UniformType> {
-    const response: AxiosResponse<UniformType> = await this.api.post('/stock/categories/', type);
+    const response: AxiosResponse<UniformType> = await this.api.post('/stock/categories', type);
     return response.data;
-  }
-
-  async updateUniformType(id: number, type: Partial<UniformType>): Promise<UniformType> {
-    const response: AxiosResponse<UniformType> = await this.api.put(`/stock/categories/${id}/`, type);
-    return response.data;
-  }
-
-  async deleteUniformType(id: number): Promise<void> {
-    await this.api.delete(`/stock/categories/${id}/`);
   }
 
   // Size Methods
-  async getSizes(params?: any): Promise<PaginatedResponse<Size> | Size[]> {
-    const response: AxiosResponse<Size[]> = await this.api.get('/stock/sizes/', { params });
+  async getSizes(): Promise<Size[]> {
+    const response: AxiosResponse<Size[]> = await this.api.get('/stock/sizes');
     return response.data;
   }
 
-  async createSize(size: Omit<Size, 'id' | 'created_at'>): Promise<Size> {
-    const response: AxiosResponse<Size> = await this.api.post('/stock/sizes/', size);
+  async createSize(size: Omit<Size, 'id'>): Promise<Size> {
+    const response: AxiosResponse<Size> = await this.api.post('/stock/sizes', size);
     return response.data;
   }
 
   async updateSize(id: number, size: Partial<Size>): Promise<Size> {
-    const response: AxiosResponse<Size> = await this.api.put(`/stock/sizes/${id}/`, size);
+    const response: AxiosResponse<Size> = await this.api.put(`/stock/sizes/${id}`, size);
     return response.data;
   }
 
   async deleteSize(id: number): Promise<void> {
-    await this.api.delete(`/stock/sizes/${id}/`);
+    await this.api.delete(`/stock/sizes/${id}`);
   }
 
   // Inventory Methods
@@ -348,84 +291,60 @@ class ApiService {
     ordering?: string;
     page?: number;
   }): Promise<PaginatedResponse<Inventory>> {
-    const response: AxiosResponse<PaginatedResponse<Inventory>> = await this.api.get('/stock/inventory/', {
+    const response: AxiosResponse<PaginatedResponse<Inventory>> = await this.api.get('/stock/stock', {
       params
     });
     return response.data;
   }
 
   async createInventoryItem(item: Omit<Inventory, 'id' | 'school_details' | 'size_details' | 'created_at' | 'updated_at'>): Promise<Inventory> {
-    const response: AxiosResponse<Inventory> = await this.api.post('/stock/inventory/', item);
+    const response: AxiosResponse<Inventory> = await this.api.post('/stock/stock', item);
     return response.data;
   }
 
   async updateInventoryItem(id: number, item: Partial<Inventory>): Promise<Inventory> {
-    const response: AxiosResponse<Inventory> = await this.api.put(`/stock/inventory/${id}/`, item);
+    const response: AxiosResponse<Inventory> = await this.api.put(`/stock/stock/${id}`, item);
     return response.data;
   }
 
   async deleteInventoryItem(id: number): Promise<void> {
-    await this.api.delete(`/stock/inventory/${id}/`);
+    await this.api.delete(`/stock/stock/${id}`);
   }
 
   // Sales Methods
-  async getSales(params?: any): Promise<PaginatedResponse<Sale> | Sale[]> {
-    const response: AxiosResponse<Sale[]> = await this.api.get('/stock/sales/', { params });
+  async getSales(): Promise<Sale[]> {
+    const response: AxiosResponse<Sale[]> = await this.api.get('/stock/sale/');
     return response.data;
   }
 
-  async createSale(sale: Omit<Sale, 'id' | 'date' | 'created_at' | 'unit_price' | 'total_price' | 'status'>): Promise<Sale> {
-    const response: AxiosResponse<Sale> = await this.api.post('/stock/sales/', sale);
+  async createSale(sale: Omit<Sale, 'id' | 'date' | 'total_amount'>): Promise<Sale> {
+    const response: AxiosResponse<Sale> = await this.api.post('/stock/sale/', sale);
     return response.data;
   }
 
-  async updateSale(id: number, sale: Partial<Sale>): Promise<Sale> {
-    const response: AxiosResponse<Sale> = await this.api.put(`/stock/sales/${id}/`, sale);
+  async getSaleItems(): Promise<SaleItem[]> {
+    const response: AxiosResponse<SaleItem[]> = await this.api.get('/stock/sale-items/');
     return response.data;
   }
 
-  async updateSaleStatus(id: number, status: string): Promise<Sale> {
-    const response: AxiosResponse<Sale> = await this.api.patch(`/stock/sales/${id}/`, { status });
+  async createSaleItem(item: Omit<SaleItem, 'id' | 'line_total'>): Promise<SaleItem> {
+    const response: AxiosResponse<SaleItem> = await this.api.post('/stock/sale-items/', item);
     return response.data;
-  }
-
-  async deleteSale(id: number): Promise<void> {
-    await this.api.delete(`/stock/sales/${id}/`);
-  }
-
-  //return methods
-  async getReturns(params?: any): Promise<PaginatedResponse<Return> | Return[]> {
-    const response: AxiosResponse<Return[]> = await this.api.get('/stock/returns/', { params });
-    return response.data;
-  }
-
-  async createReturn(returnItem: Omit<Return, 'id' | 'created_at'>): Promise<Return> {
-    const response: AxiosResponse<Return> = await this.api.post('/stock/returns/', returnItem);
-    return response.data;
-  }
-
-  async updateReturn(id: number, returnItem: Partial<Return>): Promise<Return> {
-    const response: AxiosResponse<Return> = await this.api.put(`/stock/returns/${id}/`, returnItem);
-    return response.data;
-  }
-
-  async deleteReturn(id: number): Promise<void> {
-    await this.api.delete(`/stock/returns/${id}/`);
   }
 
   // User Methods
-  async getUsers(params?: any): Promise<PaginatedResponse<User> | User[]> {
-    const response: AxiosResponse<User[]> = await this.api.get('/users/users/', { params });
+  async getUsers(): Promise<User[]> {
+    const response: AxiosResponse<User[]> = await this.api.get('/users/users/');
     return response.data;
   }
 
-  async createUser(user: Omit<User, 'id' | 'date_joined' | 'last_login'> & { password: string }): Promise<User> {
+  async createUser(user: Omit<User, 'id'> & { password: string }): Promise<User> {
     const response: AxiosResponse<User> = await this.api.post('/users/users/', user);
     return response.data;
   }
 
   async updateUser(id: number, user: Partial<User>): Promise<User> {
-    const response: AxiosResponse<User> = await this.api.patch(`/users/users/${id}/`, user);
+    const response: AxiosResponse<User> = await this.api.put(`/users/users/${id}/`, user);
     return response.data;
   }
 

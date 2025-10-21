@@ -1,30 +1,26 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../utils/api';
-import type { School, PaginatedResponse } from '../../utils/api';
+import type { UniformType, PaginatedResponse } from '../../utils/api';
 import { toast } from 'react-toastify';
-import { usePermissions } from '../../hooks/usePermissions';
 
 const Schools = () => {
-  const [schoolsData, setSchoolsData] = useState<PaginatedResponse<School> | null>(null);
+  const [categoryData, setCategoryData] = useState<PaginatedResponse<UniformType> | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('name');
   const [currentPage, setCurrentPage] = useState(1);
-  
-  const permissions = usePermissions();
   
   // Modal states
   const [showSortModal, setShowSortModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<UniformType | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState({
-    name: '',
-    location: ''
+    name: ''
   });
 
   // Fetch data
@@ -41,18 +37,18 @@ const Schools = () => {
       };
       
       if (searchTerm) params.search = searchTerm;
-      
-      const response = await api.getSchools(params);
+      // ****************Fetch data***************
+      const response = await api.getUniformTypes(params);
       // Convert to paginated response format if it's just an array
       if (Array.isArray(response)) {
-        setSchoolsData({
+        setCategoryData({
           results: response,
           count: response.length,
           next: null,
           previous: null
         });
       } else {
-        setSchoolsData(response);
+        setCategoryData(response);
       }
     } catch (error) {
       console.error('Failed to fetch schools:', error);
@@ -73,16 +69,15 @@ const Schools = () => {
     setShowSortModal(false);
   };
 
-  const openActionModal = (school: School) => {
-    setSelectedSchool(school);
+  const openActionModal = (category: UniformType) => {
+    setSelectedCategory(category);
     setShowActionModal(true);
   };
 
   const openEditModal = () => {
-    if (selectedSchool) {
+    if (selectedCategory) {
       setFormData({
-        name: selectedSchool.name,
-        location: selectedSchool.location || ''
+        name: selectedCategory.name,
       });
       setShowEditModal(true);
       setShowActionModal(false);
@@ -91,20 +86,20 @@ const Schools = () => {
 
   const openAddModal = () => {
     setFormData({
-      name: '',
-      location: ''
+      name: ''
     });
     setShowAddModal(true);
   };
 
+  //********************************** */
   const handleDelete = async () => {
-    if (selectedSchool) {
+    if (selectedCategory) {
       try {
-        await api.deleteSchool(selectedSchool.id);
+        await api.deleteUniformType(selectedCategory.id);
         toast.success('School deleted successfully');
         fetchData();
         setShowActionModal(false);
-        setSelectedSchool(null);
+        setSelectedCategory(null);
       } catch (error) {
         toast.error('Failed to delete school');
       }
@@ -116,22 +111,21 @@ const Schools = () => {
       setFormLoading(true);
       
       const data = {
-        name: formData.name,
-        location: formData.location || undefined
+        name: formData.name
       };
 
-      if (isEdit && selectedSchool) {
-        await api.updateSchool(selectedSchool.id, data);
+      if (isEdit && selectedCategory) {
+        await api.updateUniformType(selectedCategory.id, data);
         toast.success('School updated successfully');
         setShowEditModal(false);
       } else {
-        await api.createSchool(data);
+        await api.createUniformType(data);
         toast.success('School created successfully');
         setShowAddModal(false);
       }
       
       fetchData();
-      setSelectedSchool(null);
+      setSelectedCategory(null);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Operation failed');
     } finally {
@@ -139,26 +133,24 @@ const Schools = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB');
-  };
+  // const handlePageChange = (page: number) => {
+  //   setCurrentPage(page);
+  // };
 
   // Summary stats
   const getSummaryStats = () => {
-    if (!schoolsData?.results) return { total: 0, withContact: 0, withEmail: 0, withPhone: 0 };
+    if (!categoryData?.results) return { total: 0, withId: 0};
     
-    const schools = schoolsData.results;
+    const categories = categoryData.results;
     return {
-      total: schoolsData.count,
-      withContact: schools.filter(school => school.contact_person).length,
-      withEmail: schools.filter(school => school.email).length,
-      withPhone: schools.filter(school => school.phone).length
+      total: categoryData.count,
+      withId: categories.filter(category => category.id).length,
     };
   };
 
   const stats = getSummaryStats();
 
-  if (loading && !schoolsData) {
+  if (loading && !categoryData) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -172,15 +164,11 @@ const Schools = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Schools Management</h1>
-        <p className="text-gray-600">
-          {permissions.canManageSchools 
-            ? 'Manage school information and contacts' 
-            : 'View school information and contacts'}
-        </p>
+        <p className="text-gray-600">Manage school information and contacts</p>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-black">
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="col-span-2">
           <input
             type="text"
@@ -198,14 +186,12 @@ const Schools = () => {
           Sort by
         </button>
 
-        {permissions.canManageSchools && (
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            + Add School
-          </button>
-        )}
+        <button
+          onClick={openAddModal}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          + Add School
+        </button>
       </div>
 
       {/* Summary Cards */}
@@ -215,20 +201,20 @@ const Schools = () => {
           <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500">With Contact Person</h3>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{stats.withContact}</p>
+          <h3 className="text-sm font-medium text-gray-500">With Id</h3>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{stats.withId}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        {/* <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-medium text-gray-500">With Email</h3>
           <p className="text-2xl font-bold text-green-600 mt-1">{stats.withEmail}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-medium text-gray-500">With Phone</h3>
           <p className="text-2xl font-bold text-purple-600 mt-1">{stats.withPhone}</p>
-        </div>
+        </div> */}
       </div>
 
-      {/* Schools Table */}
+      {/* category Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -238,38 +224,32 @@ const Schools = () => {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  School Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
+                  Category name
                 </th>
                
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created on
+                </th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {schoolsData?.results?.map((school) => (
-                <tr key={school.id} className="hover:bg-gray-50">
+              {categoryData?.results?.map((category) => (
+                <tr key={category.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    #{school.id}
+                    #{category.id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {school.name}
+                    {category.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {school.location || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(school.created_at)}
-                  </td>
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(category.created_at)}
+                  </td> */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <button
-                      onClick={() => openActionModal(school)}
+                      onClick={() => openActionModal(category)}
                       className="text-indigo-600 hover:text-indigo-900"
                     >
                       •••
@@ -282,10 +262,10 @@ const Schools = () => {
         </div>
 
         {/* Pagination */}
-        {schoolsData && (schoolsData.previous || schoolsData.next) && (
+        {categoryData && (categoryData.previous || categoryData.next) && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
-              {schoolsData.previous && (
+              {categoryData.previous && (
                 <button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -293,7 +273,7 @@ const Schools = () => {
                   Previous
                 </button>
               )}
-              {schoolsData.next && (
+              {categoryData.next && (
                 <button
                   onClick={() => setCurrentPage(currentPage + 1)}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -306,12 +286,12 @@ const Schools = () => {
               <div>
                 <p className="text-sm text-gray-700">
                   Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{Math.ceil(schoolsData.count / 20)}</span> ({schoolsData.count} total schools)
+                  <span className="font-medium">{Math.ceil(categoryData.count / 20)}</span> ({categoryData.count} total schools)
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  {schoolsData.previous && (
+                  {categoryData.previous && (
                     <button
                       onClick={() => setCurrentPage(currentPage - 1)}
                       className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
@@ -319,7 +299,7 @@ const Schools = () => {
                       Previous
                     </button>
                   )}
-                  {schoolsData.next && (
+                  {categoryData.next && (
                     <button
                       onClick={() => setCurrentPage(currentPage + 1)}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
@@ -399,30 +379,22 @@ const Schools = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 w-80">
             <h3 className="text-lg font-semibold text-black mb-4">Actions</h3>
             <ul className="space-y-3">
-              {permissions.canManageSchools ? (
-                <>
-                  <li>
-                    <button
-                      onClick={openEditModal}
-                      className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
-                    >
-                      Edit School
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={handleDelete}
-                      className="w-full text-left p-2 rounded text-red-500 hover:bg-red-100"
-                    >
-                      Delete School
-                    </button>
-                  </li>
-                </>
-              ) : (
-                <li className="text-gray-500 text-center py-4">
-                  View only access
-                </li>
-              )}
+              <li>
+                <button
+                  onClick={openEditModal}
+                  className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
+                >
+                  Edit category
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={handleDelete}
+                  className="w-full text-left p-2 rounded text-red-500 hover:bg-red-100"
+                >
+                  Delete category
+                </button>
+              </li>
             </ul>
             <div className="mt-6 text-right">
               <button
@@ -454,17 +426,6 @@ const Schools = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Enter school name"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="e.g., Gilgil, Nakuru"
                 />
               </div>
             </div>

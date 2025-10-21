@@ -1,11 +1,12 @@
 import { X, LogOut } from 'lucide-react';
-import { SidebarItems } from './sideBarItems';
 import { useSidebar } from '../../../context/SideBarContext';
 import UserProfileBadge from './UserProfileBabge';
 import MenuItem from './MenuItem';
+import { useSidebarItems } from '../../../hooks/useSidebarItems';
 
 const Sidebar = () => {
   const { isSidebarOpen, closeSidebar } = useSidebar();
+  const sidebarItems = useSidebarItems();
 
   const logout = () => {
       console.log('logout');
@@ -47,7 +48,7 @@ const Sidebar = () => {
           className={`flex-1 p-4 overflow-y-auto`}
         >
           <ul className="space-y-4">
-            {SidebarItems.map((item, index) => (
+            {sidebarItems.map((item, index) => (
               <li key={index}>
                 <MenuItem item={item} />
               </li>
@@ -55,7 +56,7 @@ const Sidebar = () => {
           </ul>
         </nav>
 
-        <div
+        {/* <div
           className={`border-t p-4 space-y-2 border-gray-200`}
         >
           <button
@@ -65,7 +66,7 @@ const Sidebar = () => {
             <LogOut size={20} />
             <span>Logout</span>
           </button>
-        </div>
+        </div> */}
       </aside>
     </>
   );

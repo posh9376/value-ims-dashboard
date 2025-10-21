@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   fallbackPath?: string;
@@ -9,11 +10,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallbackPath = '/auth/login',
 }) => {
   const location = useLocation();
+  const { user, loading } = useAuth();
   
-  // For now, we'll assume user is always authenticated
-  // You can add your authentication logic here later
-  const isAuthenticated = true; // Replace with actual auth check
-  const isLoading = false; // Replace with actual loading state
+  const isAuthenticated = !!user;
+  const isLoading = loading;
 
   if (isLoading) {
     return (

@@ -9,6 +9,7 @@ import Analytics from '../pages/analytics/Analytics';
 import Sales from '../pages/orders/Sales';
 import Sizes from '../pages/sizes/Sizes';
 import Schools from '../pages/schools/Schools';
+import UniformTypes from '../pages/types/UniformTypes';
 
 const MainRoutes = () => {
   return (
@@ -23,6 +24,7 @@ const MainRoutes = () => {
         <Route path="/analytics" element={<Analytics />} />
         <Route path='/sizes' element={<Sizes />} />
         <Route path='/schools' element={<Schools />} />
+        <Route path='/uniform-types' element={<UniformTypes />} />
       </Route>
     </>
   );

@@ -8,7 +8,8 @@ import {
     Users,
     BarChart3,
     MoveVertical,
-    School
+    School,
+    Shirt
   } from 'lucide-react';
   
   export const SidebarItems = [
@@ -16,6 +17,7 @@ import {
     { title: 'Inventory', icon: Package, path: '/inventory' },
     { title: 'Sales', icon: DollarSign, path: '/sales' },
     { title: 'Schools', icon: School, path: '/schools' },
+    { title: 'Uniform Types', icon: Shirt, path: '/uniform-types' },
     { title: 'Sizes', icon: MoveVertical, path: '/sizes' },
     { title: 'Users', icon: Users, path: '/users' },
     {

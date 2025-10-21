@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../utils/api';
-import type { School, PaginatedResponse } from '../../utils/api';
+import type { UniformType, PaginatedResponse } from '../../utils/api';
 import { toast } from 'react-toastify';
 import { usePermissions } from '../../hooks/usePermissions';
 
-const Schools = () => {
-  const [schoolsData, setSchoolsData] = useState<PaginatedResponse<School> | null>(null);
+const UniformTypes = () => {
+  const [uniformTypesData, setUniformTypesData] = useState<PaginatedResponse<UniformType> | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -18,13 +18,12 @@ const Schools = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [selectedUniformType, setSelectedUniformType] = useState<UniformType | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState({
-    name: '',
-    location: ''
+    name: ''
   });
 
   // Fetch data
@@ -42,21 +41,21 @@ const Schools = () => {
       
       if (searchTerm) params.search = searchTerm;
       
-      const response = await api.getSchools(params);
+      const response = await api.getUniformTypes(params);
       // Convert to paginated response format if it's just an array
       if (Array.isArray(response)) {
-        setSchoolsData({
+        setUniformTypesData({
           results: response,
           count: response.length,
           next: null,
           previous: null
         });
       } else {
-        setSchoolsData(response);
+        setUniformTypesData(response);
       }
     } catch (error) {
-      console.error('Failed to fetch schools:', error);
-      toast.error('Failed to load schools data');
+      console.error('Failed to fetch uniform types:', error);
+      toast.error('Failed to load uniform types data');
     } finally {
       setLoading(false);
     }
@@ -73,16 +72,15 @@ const Schools = () => {
     setShowSortModal(false);
   };
 
-  const openActionModal = (school: School) => {
-    setSelectedSchool(school);
+  const openActionModal = (uniformType: UniformType) => {
+    setSelectedUniformType(uniformType);
     setShowActionModal(true);
   };
 
   const openEditModal = () => {
-    if (selectedSchool) {
+    if (selectedUniformType) {
       setFormData({
-        name: selectedSchool.name,
-        location: selectedSchool.location || ''
+        name: selectedUniformType.name
       });
       setShowEditModal(true);
       setShowActionModal(false);
@@ -91,22 +89,21 @@ const Schools = () => {
 
   const openAddModal = () => {
     setFormData({
-      name: '',
-      location: ''
+      name: ''
     });
     setShowAddModal(true);
   };
 
   const handleDelete = async () => {
-    if (selectedSchool) {
+    if (selectedUniformType) {
       try {
-        await api.deleteSchool(selectedSchool.id);
-        toast.success('School deleted successfully');
+        await api.deleteUniformType(selectedUniformType.id);
+        toast.success('Uniform type deleted successfully');
         fetchData();
         setShowActionModal(false);
-        setSelectedSchool(null);
+        setSelectedUniformType(null);
       } catch (error) {
-        toast.error('Failed to delete school');
+        toast.error('Failed to delete uniform type');
       }
     }
   };
@@ -116,22 +113,21 @@ const Schools = () => {
       setFormLoading(true);
       
       const data = {
-        name: formData.name,
-        location: formData.location || undefined
+        name: formData.name.trim()
       };
 
-      if (isEdit && selectedSchool) {
-        await api.updateSchool(selectedSchool.id, data);
-        toast.success('School updated successfully');
+      if (isEdit && selectedUniformType) {
+        await api.updateUniformType(selectedUniformType.id, data);
+        toast.success('Uniform type updated successfully');
         setShowEditModal(false);
       } else {
-        await api.createSchool(data);
-        toast.success('School created successfully');
+        await api.createUniformType(data);
+        toast.success('Uniform type created successfully');
         setShowAddModal(false);
       }
       
       fetchData();
-      setSelectedSchool(null);
+      setSelectedUniformType(null);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Operation failed');
     } finally {
@@ -139,26 +135,18 @@ const Schools = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB');
-  };
-
   // Summary stats
   const getSummaryStats = () => {
-    if (!schoolsData?.results) return { total: 0, withContact: 0, withEmail: 0, withPhone: 0 };
+    if (!uniformTypesData?.results) return { total: 0 };
     
-    const schools = schoolsData.results;
     return {
-      total: schoolsData.count,
-      withContact: schools.filter(school => school.contact_person).length,
-      withEmail: schools.filter(school => school.email).length,
-      withPhone: schools.filter(school => school.phone).length
+      total: uniformTypesData.count
     };
   };
 
   const stats = getSummaryStats();
 
-  if (loading && !schoolsData) {
+  if (loading && !uniformTypesData) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -171,20 +159,20 @@ const Schools = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Schools Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Uniform Types Management</h1>
         <p className="text-gray-600">
-          {permissions.canManageSchools 
-            ? 'Manage school information and contacts' 
-            : 'View school information and contacts'}
+          {permissions.canManageUniformTypes 
+            ? 'Manage uniform categories and types' 
+            : 'View uniform categories and types'}
         </p>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-black">
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="col-span-2">
           <input
             type="text"
-            placeholder="Search schools..."
+            placeholder="Search uniform types..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
@@ -198,37 +186,29 @@ const Schools = () => {
           Sort by
         </button>
 
-        {permissions.canManageSchools && (
+        {permissions.canManageUniformTypes && (
           <button
             onClick={openAddModal}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            + Add School
+            + Add Uniform Type
           </button>
         )}
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500">Total Schools</h3>
+          <h3 className="text-sm font-medium text-gray-500">Total Uniform Types</h3>
           <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500">With Contact Person</h3>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{stats.withContact}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500">With Email</h3>
-          <p className="text-2xl font-bold text-green-600 mt-1">{stats.withEmail}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500">With Phone</h3>
-          <p className="text-2xl font-bold text-purple-600 mt-1">{stats.withPhone}</p>
+          <h3 className="text-sm font-medium text-gray-500">Available Types</h3>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{stats.total}</p>
         </div>
       </div>
 
-      {/* Schools Table */}
+      {/* Uniform Types Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -238,14 +218,7 @@ const Schools = () => {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  School Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
-                </th>
-               
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
+                  Uniform Type Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -253,23 +226,17 @@ const Schools = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {schoolsData?.results?.map((school) => (
-                <tr key={school.id} className="hover:bg-gray-50">
+              {uniformTypesData?.results?.map((uniformType) => (
+                <tr key={uniformType.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    #{school.id}
+                    #{uniformType.id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {school.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {school.location || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(school.created_at)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                    {uniformType.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <button
-                      onClick={() => openActionModal(school)}
+                      onClick={() => openActionModal(uniformType)}
                       className="text-indigo-600 hover:text-indigo-900"
                     >
                       •••
@@ -282,10 +249,10 @@ const Schools = () => {
         </div>
 
         {/* Pagination */}
-        {schoolsData && (schoolsData.previous || schoolsData.next) && (
+        {uniformTypesData && (uniformTypesData.previous || uniformTypesData.next) && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
-              {schoolsData.previous && (
+              {uniformTypesData.previous && (
                 <button
                   onClick={() => setCurrentPage(currentPage - 1)}
                   className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -293,7 +260,7 @@ const Schools = () => {
                   Previous
                 </button>
               )}
-              {schoolsData.next && (
+              {uniformTypesData.next && (
                 <button
                   onClick={() => setCurrentPage(currentPage + 1)}
                   className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -306,12 +273,12 @@ const Schools = () => {
               <div>
                 <p className="text-sm text-gray-700">
                   Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{Math.ceil(schoolsData.count / 20)}</span> ({schoolsData.count} total schools)
+                  <span className="font-medium">{Math.ceil(uniformTypesData.count / 20)}</span> ({uniformTypesData.count} total uniform types)
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  {schoolsData.previous && (
+                  {uniformTypesData.previous && (
                     <button
                       onClick={() => setCurrentPage(currentPage - 1)}
                       className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
@@ -319,7 +286,7 @@ const Schools = () => {
                       Previous
                     </button>
                   )}
-                  {schoolsData.next && (
+                  {uniformTypesData.next && (
                     <button
                       onClick={() => setCurrentPage(currentPage + 1)}
                       className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
@@ -358,26 +325,18 @@ const Schools = () => {
               </li>
               <li>
                 <button
-                  onClick={() => handleSort('location')}
+                  onClick={() => handleSort('id')}
                   className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
                 >
-                  Location
+                  ID (Ascending)
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => handleSort('-created_at')}
+                  onClick={() => handleSort('-id')}
                   className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
                 >
-                  Recently Added
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleSort('created_at')}
-                  className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
-                >
-                  Oldest First
+                  ID (Descending)
                 </button>
               </li>
             </ul>
@@ -399,14 +358,14 @@ const Schools = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 w-80">
             <h3 className="text-lg font-semibold text-black mb-4">Actions</h3>
             <ul className="space-y-3">
-              {permissions.canManageSchools ? (
+              {permissions.canManageUniformTypes ? (
                 <>
                   <li>
                     <button
                       onClick={openEditModal}
                       className="w-full text-left p-2 rounded text-black hover:bg-gray-200"
                     >
-                      Edit School
+                      Edit Uniform Type
                     </button>
                   </li>
                   <li>
@@ -414,7 +373,7 @@ const Schools = () => {
                       onClick={handleDelete}
                       className="w-full text-left p-2 rounded text-red-500 hover:bg-red-100"
                     >
-                      Delete School
+                      Delete Uniform Type
                     </button>
                   </li>
                 </>
@@ -439,32 +398,21 @@ const Schools = () => {
       {/* Add/Edit Modal */}
       {(showEditModal || showAddModal) && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 text-black">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
             <h3 className="text-lg font-semibold text-black mb-4">
-              {showEditModal ? 'Edit School' : 'Add New School'}
+              {showEditModal ? 'Edit Uniform Type' : 'Add New Uniform Type'}
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">School Name *</label>
+                <label className="block text-sm font-medium text-gray-700">Uniform Type Name *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="Enter school name"
+                  placeholder="e.g., Shirts, Trousers, Dresses, Ties"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="e.g., Gilgil, Nakuru"
                 />
               </div>
             </div>
@@ -482,10 +430,10 @@ const Schools = () => {
               
               <button
                 onClick={() => handleSubmit(showEditModal)}
-                disabled={formLoading || !formData.name}
+                disabled={formLoading || !formData.name.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {formLoading ? 'Saving...' : (showEditModal ? 'Update School' : 'Add School')}
+                {formLoading ? 'Saving...' : (showEditModal ? 'Update Uniform Type' : 'Add Uniform Type')}
               </button>
             </div>
           </div>
@@ -495,4 +443,4 @@ const Schools = () => {
   );
 };
 
-export default Schools;
+export default UniformTypes;
